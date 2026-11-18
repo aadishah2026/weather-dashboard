@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Weather Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card">
+    <h1>Weather Dashboard</h1>
+    <div class="search-box">
+      <input type="text" id="city-input" placeholder="Enter city name (e.g., Tokyo)">
+      <button id="search-btn">Search</button>
+    </div>
+
+    <div id="error-message" class="error hidden"></div>
+
+    <div id="weather-display" class="weather-info hidden">
+      <h2 id="city-name"></h2>
+      <div id="weather-icon" class="icon"></div>
+      <p class="temp"><span id="temperature"></span>°C</p>
+      <p id="condition"></p>
+      <p class="details">Humidity: <span id="humidity"></span>%</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
