@@ -3,16 +3,15 @@ const cityInput = document.getElementById('city-input');
 const weatherDisplay = document.getElementById('weather-display');
 const errorMessage = document.getElementById('error-message');
 
-function getWeatherIcon(desc) {
-  const text = desc.toLowerCase();
-  if (text.includes('sun') || text.includes('clear')) return '☀️';
-  if (text.includes('partly')) return '⛅';
-  if (text.includes('cloud') || text.includes('overcast')) return '☁️';
-  if (text.includes('fog') || text.includes('mist')) return '🌫️';
-  if (text.includes('rain') || text.includes('drizzle') || text.includes('shower')) return '🌧️';
-  if (text.includes('snow') || text.includes('ice') || text.includes('blizzard')) return '❄️';
-  if (text.includes('thunder')) return '⛈️';
-  return '🌡️';
+function getWeatherDetails(code) {
+  if (code === 0) return { icon: '☀️', text: 'Clear Sky' };
+  if (code >= 1 && code <= 3) return { icon: '⛅', text: 'Partly Cloudy' };
+  if (code >= 45 && code <= 48) return { icon: '🌫️', text: 'Foggy' };
+  if (code >= 51 && code <= 67) return { icon: '🌧️', text: 'Rain' };
+  if (code >= 71 && code <= 77) return { icon: '❄️', text: 'Snow' };
+  if (code >= 80 && code <= 82) return { icon: '🌦️', text: 'Rain Showers' };
+  if (code >= 95) return { icon: '⛈️', text: 'Thunderstorm' };
+  return { icon: '🌡️', text: 'Cloudy' };
 }
 
 async function fetchWeather() {
@@ -23,26 +22,33 @@ async function fetchWeather() {
   weatherDisplay.classList.add('hidden');
 
   try {
-    const url = `https://wttr.in{encodeURIComponent(city)}?format=j1`;
-    const response = await fetch(url);
-    
-    if (!response.ok) {
+    // 1. Convert city name to latitude & longitude
+    const geoUrl = `https://open-meteo.com{encodeURIComponent(city)}&count=1&language=en&format=json`;
+    const geoRes = await fetch(geoUrl);
+    const geoData = await geoRes.json();
+
+    if (!geoData.results || geoData.results.length === 0) {
       throw new Error('City not found. Please try another search.');
     }
 
-    const data = await response.json();
-    const current = data.current_condition.at(0);
-    const area = data.nearest_area.at(0);
+    // Grab the first matching city from the array
+    const location = geoData.results.at(0);
+    const { latitude, longitude, name, country } = location;
 
-    const cityName = area.areaName.at(0).value;
-    const countryName = area.country.at(0).value;
-    const description = current.weatherDesc.at(0).value;
+    // 2. Fetch current temperature, humidity, and weather code
+    const weatherUrl = `https://open-meteo.com{latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code`;
+    const weatherRes = await fetch(weatherUrl);
+    const weatherData = await weatherRes.json();
 
-    document.getElementById('city-name').textContent = `${cityName}, ${countryName}`;
-    document.getElementById('weather-icon').textContent = getWeatherIcon(description);
-    document.getElementById('temperature').textContent = current.temp_C;
-    document.getElementById('condition').textContent = description;
-    document.getElementById('humidity').textContent = current.humidity;
+    const current = weatherData.current;
+    const details = getWeatherDetails(current.weather_code);
+
+    // 3. Update the HTML elements
+    document.getElementById('city-name').textContent = `${name}, ${country}`;
+    document.getElementById('weather-icon').textContent = details.icon;
+    document.getElementById('temperature').textContent = Math.round(current.temperature_2m);
+    document.getElementById('condition').textContent = details.text;
+    document.getElementById('humidity').textContent = current.relative_humidity_2m;
 
     weatherDisplay.classList.remove('hidden');
   } catch (err) {
